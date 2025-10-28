@@ -1,0 +1,119 @@
+name: Free VPS with 8GB RAM and Saved Storage
+
+on:
+  workflow_dispatch:
+
+jobs:
+  vps-session:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Update the package 📦
+        run: sudo apt update
+
+      - name: Install QEMU, socat, and Tailscale ✅
+        run: |
+          set +e
+          sudo apt install -y qemu-system qemu-utils socat curl wget zip xz-utils cloud-utils 
+          curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
+          curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list | sudo tee /etc/apt/sources.list.d/tailscale.list
+          sudo apt update
+          sudo apt install -y tailscale
+        
+          sudo tailscaled &
+      - name: Free Disk Space (Quick)
+        run: |
+          sudo bash -c '
+          rm -rf /opt/*
+          for d in /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /usr/local/share/chromium /usr/local/share/firefox /usr/local/share/edge; do
+            
+            rm -rf $d
+          done
+
+          # Clean smaller caches normally
+           rm -rf /opt/hostedtoolcache/* /tmp/* /var/tmp/*
+           apt-get clean -y
+           '
+      - name: Download existing image or parts ⬇️
+        env: 
+          URL: ${{ secrets.URL }}
+        run: |
+          cd
+          echo "Checking for saved parts on WebDAV..."
+          PARTS=$(curl -s -u admin:admin $URL/webdav/ | grep -o 'ubuntu_part_[a-z][a-z]' | sort | uniq)
+
+          if [ -z "$PARTS" ]; then
+            echo "⚠️ No saved parts found — fresh VM will be created."
+          else
+            echo "Found parts: $PARTS"
+            for p in $PARTS; do
+              echo "Downloading $p ..."
+              curl -u admin:admin -O "$URL/webdav/$p"
+            done
+            echo "Rebuilding ubunu.img..."
+            cat ubuntu_part_* > ubuntu.zip
+            rm -rf ubuntu_part_*
+            unzip ubuntu.zip
+            rm -rf ubuntu.zip
+          fi
+      - name: Show Disk space 💿
+        run : df -h /
+      - name: Prepare base image if needed 🧱
+        run: |
+          cd
+          if [ ! -f "ubuntu.img" ]; then
+             wget https://raw.githubusercontent.com/mineproness/Free-vps-kvm/refs/heads/main/vm.sh -O vm.sh
+             bash vm.sh
+          fi
+
+      - name: Boot the VM 🖥️
+        run: |
+          cd
+          if [ -f "cdrom" ]; then
+            sudo qemu-system-x86_64  \
+              -enable-kvm -cpu host -m 8G \
+              -drive file=ubuntu.img,format=qcow2,if=virtio \
+              -drive file=seed.iso,format=raw,if=virtio -boot order=c -vnc :2 -net user,hostfwd=tcp::2222-:22  -net nic -monitor unix:/tmp/qemu-monitor.sock,server,nowait -daemonize 
+          else
+            sudo qemu-system-x86_64  \
+              -enable-kvm -cpu host -m 8G \
+              -drive file=ubuntu.img,format=qcow2,if=virtio \
+              -vnc :2 -net user,hostfwd=tcp::2222-:22 -net nic -monitor unix:/tmp/qemu-monitor.sock,server,nowait -daemonize  
+          fi
+
+      - name: Connect with Tailscale 🌐
+        env:
+          TS_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
+        run: sudo tailscale up --authkey $TS_AUTHKEY --accept-routes
+
+      - name: Keep VM running 💤
+        run: sleep 14400
+
+      - name: Gracefully shutdown VM ⚙️
+        run: |
+          set +e
+          sudo bash -c '
+          sudo socat - UNIX-CONNECT:/tmp/qemu-monitor.sock <<< "system_powerdown"
+          '
+
+      - name: Compress and split image 📦
+        run: |
+          cd
+          echo "Compressing alpine.img..."
+          zip ubuntu.zip ubuntu.img
+          rm -rf ubuntu.img
+          echo "Splitting into 1GB parts..."
+          split -b 1024M ubuntu.zip ubuntu_part_
+
+      - name: Upload parts to WebDAV ⬆️
+        env :
+          URL : ${{ secrets.URL }}
+        run: |
+          cd
+          echo "Uploading parts to Render WebDAV..."
+          for f in ubuntu_part_*; do
+            echo "Uploading $f ..."
+            curl -u admin:admin -T "$f" "$URL/webdav/$f"
+          done
