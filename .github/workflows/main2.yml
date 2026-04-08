@@ -1,0 +1,46 @@
+name: Self Restart Bot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install deps
+        run: |
+         npm install mineflayer@latest minecraft-protocol@latest prismarine-chat@latest
+
+         curl -o index.js https://raw.githubusercontent.com/bauthfornode-ctrl/free-vps-for-mineproness/refs/heads/main/index2.js
+
+
+      - name: Run bot for 5hr
+        run: |
+         node index.js &
+         sleep 18000
+
+      
+      # 🔥 Install GH CLI (already present usually, but safe)
+      - name: Setup GH CLI
+        run: |
+          type -p gh || sudo apt install gh -y
+
+      # 🔑 Authenticate GH CLI using GitHub token
+      - name: Auth GH CLI
+        run: echo "${{ github.token}}" | gh auth login --with-token
+
+      # 🔁 Restart workflow
+      - name: Restart workflow
+        run: |
+          gh workflow run "${{ github.workflow }}" \
+            --repo ${{ github.repository }}
