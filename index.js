@@ -1,5 +1,4 @@
 import mineflayer, { createBot } from "mineflayer";
-import express from "express";
 // import {} from "prismarine-viewer";
 const setting = {
   version: "1.21.11",
