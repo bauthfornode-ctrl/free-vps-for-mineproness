@@ -42,4 +42,4 @@ jobs:
       # 🔁 Restart workflow
       - name: Restart workflow
         run: |
-          gh workflow run main.yml
+          gh workflow run main2.yml
