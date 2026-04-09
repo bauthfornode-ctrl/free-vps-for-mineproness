@@ -42,5 +42,4 @@ jobs:
       # 🔁 Restart workflow
       - name: Restart workflow
         run: |
-          gh workflow run "${{ github.workflow }}" \
-            --repo ${{ github.repository }}
+          gh workflow run main.yml
