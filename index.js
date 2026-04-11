@@ -5,7 +5,7 @@ const setting = {
   username: "minepronessBot",
   auth: "offline",
   host: "mineproness.aternos.me",
-  port: 25565,
+  port: 32310,
 };
 
 let interval = null
