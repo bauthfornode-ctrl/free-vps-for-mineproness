@@ -30,14 +30,24 @@ function CreateBot() {
     console.log("error:", resson);
     clearInterval(interval);
     clearInterval(interval2);
-    CreateBot();
+    reconnect();
   });
   bot.addListener("kicked", (resson) => {
     console.log(resson)
     clearInterval(interval);
     clearInterval(interval2);
-    CreateBot();
+    reconnect();
   });
+  bot.on('error', (err) => {
+    console.log('⚠️ Error:', err.message)
+    reconnect()
+  })
 }
+function reconnect() {
+  setTimeout(() => {
+    CreateBot()
+  }, 5000) // wait 5 seconds before reconnect
+}
+
 
 CreateBot()
