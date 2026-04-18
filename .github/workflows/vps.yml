@@ -56,10 +56,9 @@ jobs:
           gh release download $RELEASE_TAG --pattern "ubuntu_part_*" || true
           if ls ubuntu_part_* 1> /dev/null 2>&1; then
             echo "Rebuilding ubuntu.zip from parts..."
-            cat ubuntu_part_* > ubuntu.zip
+            cat ubuntu_part_* > ubuntu.7z
             rm -rf ubuntu_part_*
-            unzip -P $PASSWORD ubuntu.zip || true
-            rm -rf ubuntu.zip
+            7z x ubuntu.7z -p"$PASSWORD" || true
           fi
           
       - name: Show disk space
@@ -109,10 +108,10 @@ jobs:
           PASSWORD: ${{ secrets.PASSWORD }}
         run: |
           echo "Compressing ubuntu.img..."
-          zip -P $PASSWORD ubuntu.zip ubuntu.img
+          7z a -tzip -mx=0 -p"$PASSWORD" -mem=AES256 ubuntu.7z ubuntu.qcow2
           rm -rf ubuntu.img
           echo "Splitting into 1GB parts..."
-          split -b 1024M ubuntu.zip ubuntu_part_
+          split -b 1024M ubuntu.7z ubuntu_part_
    
           
           
