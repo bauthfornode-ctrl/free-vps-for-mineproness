@@ -111,7 +111,7 @@ jobs:
           PASSWORD: ${{ secrets.PASSWORD }}
         run: |
           echo "Compressing ubuntu.img..."
-          7z a -tzip -mx=0 -p"$PASSWORD" -mem=AES256 ubuntu.7z ubuntu.qcow2
+          7z a -tzip -mx=0 -p"$PASSWORD" -mem=AES256 ubuntu.7z ubuntu.img
           rm -rf ubuntu.img
           echo "Splitting into 1GB parts..."
           split -b 1024M ubuntu.7z ubuntu_part_
