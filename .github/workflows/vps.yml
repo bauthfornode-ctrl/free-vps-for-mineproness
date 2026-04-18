@@ -41,8 +41,8 @@ jobs:
 
            docker system prune -af || true
 
-          echo "After:"
-          df -h
+           echo "After:"
+           df -h
       - name: Ensure release exists
         run: |
           if ! gh release view $RELEASE_TAG; then
