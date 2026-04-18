@@ -99,7 +99,7 @@ jobs:
           sleep 30
       - name: Keep VM running
         run: |
-          sleep 60
+          sleep 18000
           
       - name: Gracefully shutdown VM
         run: |
