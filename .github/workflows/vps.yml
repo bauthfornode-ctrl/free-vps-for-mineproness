@@ -30,15 +30,20 @@ jobs:
           
       - name: Free disk space
         run: |
-          sudo bash -c '
-          rm -rf /opt/*
-          for d in /usr/local/lib/android /usr/share/dotnet /opt/ghc \
-            /usr/local/share/chromium /usr/local/share/firefox /usr/local/share/edge; do
-            rm -rf $d
-          done
-          rm -rf /opt/hostedtoolcache/* /tmp/* /var/tmp/*
-          apt-get clean -y
-          '
+           set -e
+           echo "Before:"
+           df -h
+
+          sudo apt-get clean
+          sudo apt-get autoremove -y
+
+          rm -rf /tmp/* /var/tmp/*
+          rm -rf ~/.cache ~/.npm ~/.gradle || true
+
+          docker system prune -af || true
+
+         echo "After:"
+         df -h
       - name: Ensure release exists
         run: |
           if ! gh release view $RELEASE_TAG; then
@@ -61,8 +66,7 @@ jobs:
             7z x ubuntu.7z -p"$PASSWORD" || true
           fi
           
-      - name: Show disk space
-        run: df -h /
+ 
 
       - name: Prepare base image if needed
         run: |
@@ -96,7 +100,7 @@ jobs:
           sleep 30
       - name: Keep VM running
         run: |
-          sleep 18000
+          sleep 60
           
       - name: Gracefully shutdown VM
         run: |
