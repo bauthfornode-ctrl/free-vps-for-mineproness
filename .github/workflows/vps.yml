@@ -33,17 +33,16 @@ jobs:
            set -e
            echo "Before:"
            df -h
+           sudo apt-get clean
+           sudo apt-get autoremove -y
 
-          sudo apt-get clean
-          sudo apt-get autoremove -y
+           rm -rf /tmp/* /var/tmp/*
+           rm -rf ~/.cache ~/.npm ~/.gradle || true
 
-          rm -rf /tmp/* /var/tmp/*
-          rm -rf ~/.cache ~/.npm ~/.gradle || true
+           docker system prune -af || true
 
-          docker system prune -af || true
-
-         echo "After:"
-         df -h
+          echo "After:"
+          df -h
       - name: Ensure release exists
         run: |
           if ! gh release view $RELEASE_TAG; then
